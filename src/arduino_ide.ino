@@ -1,0 +1,119 @@
+#include <WiFi.h>
+#include <ThingSpeak.h>
+#include <DHT.h>
+
+// WiFi
+const char* ssid = "EEE305C";
+const char* password = "305@EEECL";
+
+// ThingSpeak
+unsigned long channelID = 3359530;
+const char* writeAPIKey = "1IMYGPYJQCZ4NI17";
+
+// DHT
+#define DHTPIN 4
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+
+// Pins
+#define VOLTAGE_PIN 34
+#define CURRENT_PIN 35
+#define MQ3_PIN 32
+
+WiFiClient client;
+
+// Variables
+float temperature, prevTemp = 0;
+float voltage, current;
+float dTdt = 0;
+
+// SOC
+float SOC = 100.0;   // initial %
+float batteryCapacity = 2.0; // Ah (adjust if needed)
+unsigned long prevTime = 0;
+
+// Cell imbalance (simulated)
+float Vmax, Vmin, imbalance;
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\nConnected!");
+  ThingSpeak.begin(client);
+}
+
+void loop() {
+
+  unsigned long currentTime = millis();
+  float dt = (currentTime - prevTime) / 1000.0; // seconds
+
+  // 🌡️ Temperature
+  temperature = dht.readTemperature();
+  if (isnan(temperature)) return;
+
+  // 🔥 Temperature rate
+  if (dt > 0) {
+    dTdt = (temperature - prevTemp) / dt;
+  }
+
+  prevTemp = temperature;
+  prevTime = currentTime;
+
+  // 🔋 Voltage
+  int voltageRaw = analogRead(VOLTAGE_PIN);
+  voltage = (voltageRaw / 4095.0) * 3.3 * 5;
+
+  // ⚡ Current
+  int currentRaw = analogRead(CURRENT_PIN);
+  current = ((currentRaw / 4095.0) * 3.3 - 2.5) / 0.185;
+
+  // 🍺 Gas
+  int gasValue = analogRead(MQ3_PIN);
+
+  // 🔋 SOC (Coulomb counting)
+  float dt_hours = dt / 3600.0;
+  SOC = SOC - (current * dt_hours / batteryCapacity) * 100;
+
+  if (SOC < 0) SOC = 0;
+
+  // ⚖️ Cell imbalance (simulation)
+  Vmax = voltage + random(0, 20) / 100.0;  // +0.0 to 0.2V
+  Vmin = voltage - random(0, 20) / 100.0;
+  imbalance = Vmax - Vmin;
+
+  // 📊 Serial output
+  Serial.println("------ BMS DATA ------");
+  Serial.print("Temp: "); Serial.println(temperature);
+  Serial.print("dT/dt: "); Serial.println(dTdt);
+  Serial.print("Voltage: "); Serial.println(voltage);
+  Serial.print("Current: "); Serial.println(current);
+  Serial.print("SOC: "); Serial.println(SOC);
+  Serial.print("Imbalance: "); Serial.println(imbalance);
+  Serial.println("----------------------");
+
+  // 📡 Send to ThingSpeak
+  ThingSpeak.setField(1, temperature);
+  ThingSpeak.setField(2, voltage);
+  ThingSpeak.setField(3, current);
+  ThingSpeak.setField(4, gasValue);
+  ThingSpeak.setField(5, SOC);
+  ThingSpeak.setField(6, dTdt);
+  ThingSpeak.setField(7, imbalance);
+
+  int x = ThingSpeak.writeFields(channelID, writeAPIKey);
+
+  if (x == 200) {
+    Serial.println("Data sent ✅");
+  } else {
+    Serial.println("Error ❌");
+  }
+
+  delay(15000);
+}
