@@ -4,6 +4,26 @@ This project develops an intelligent digital twin model of an electric vehicle (
 
 ---
 
+## 📊 Prediction Output
+
+This image shows the AI model prediction results, classifying the battery condition into safe, risk, or unsafe states based on real-time parameters.
+
+<p align="center">
+  <img src="docs/PredictionValue.jpeg" width="700"/>
+</p>
+
+---
+
+## 📩 SMS Alert System
+
+This image represents the alert system that sends notifications to the user when abnormal battery conditions are detected, enabling quick preventive action.
+
+<p align="center">
+  <img src="docs/SMSAlert.jpeg" width="700"/>
+</p>
+
+---
+
 ## 🧩 System Architecture
 
 This diagram illustrates the overall workflow of the system. It shows how real-time sensor data is collected from the battery, processed through the ESP32, transmitted to the cloud, and analyzed using AI models for early fire prediction.
