@@ -39,17 +39,6 @@ To design a smart and intelligent system that can:
 
 ---
 
-## ⚙️ Technologies Used
-
-- ESP32 (Hardware Controller)  
-- Python (Backend & AI Model)  
-- LSTM (Prediction Model)  
-- Streamlit (Dashboard Visualization)  
-- ThingSpeak (Cloud Data Platform)  
-- Twilio (SMS Alert System)  
-
----
-
 ## 🧩 System Architecture
 
 This diagram illustrates the complete workflow of the system, showing how real-time sensor data is collected, processed through ESP32, transmitted to the cloud, and analyzed using AI models for early fire prediction.
