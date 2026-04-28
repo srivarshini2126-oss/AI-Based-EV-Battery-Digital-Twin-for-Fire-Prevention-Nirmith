@@ -1,0 +1,2 @@
+# AI-Based-EV-Battery-Digital-Twin-for-Fire-Prevention-Nirmith
+This project develops an intelligent digital twin model of an electric vehicle (EV) battery to predict and prevent fire hazards. The system continuously monitors key battery parameters such as temperature, current, voltage, rate of temperature change (dT/dt), state of charge (SOC), and cell imbalance using sensors and real-time data acquisition.
