@@ -1,128 +1,70 @@
 import streamlit as st
-import pandas as pd
 import random
-from streamlit_autorefresh import st_autorefresh
-import streamlit.components.v1 as components
+import time
 
-# ---------- AUTO REFRESH ----------
-st_autorefresh(interval=2000, key="refresh")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="EV Battery Monitor 🔋", layout="wide")
 
-# ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="EV Dashboard", layout="wide")
+# ---------------- TITLE ----------------
+st.title("🔋 AI-Based EV Battery Digital Twin")
+st.subheader("🔥 Fire Prediction & Safety Monitoring System")
 
-# ---------- CUSTOM STYLE ----------
-st.markdown("""
-<style>
-html, body, [class*="css"] {
-    background-color: #0e1117;
-    color: white;
-    font-family: 'Segoe UI', sans-serif;
-}
-h1 {
-    text-align: center;
-    color: #00FFAA;
-}
-[data-testid="stMetricLabel"] {
-    font-size: 16px;
-    color: #AAAAAA;
-}
-[data-testid="stMetricValue"] {
-    font-size: 32px;
-    font-weight: bold;
-}
-</style>
-""", unsafe_allow_html=True)
+# ---------------- SIDEBAR ----------------
+st.sidebar.header("⚙️ Simulation Controls")
+auto_refresh = st.sidebar.checkbox("Auto Refresh", True)
 
-st.title("🚗 EV Battery Monitoring Dashboard")
+# ---------------- SENSOR SIMULATION ----------------
+def get_sensor_data():
+    temperature = random.uniform(25, 90)     # °C
+    voltage = random.uniform(3.0, 4.2)       # V
+    current = random.uniform(0, 50)          # A
+    soc = random.uniform(20, 100)            # %
+    return temperature, voltage, current, soc
 
-# ---------- SESSION STORAGE ----------
-if "data" not in st.session_state:
-    st.session_state.data = pd.DataFrame(columns=[
-        "Temp", "dT/dt", "Voltage", "Current", "SOC", "Imbalance", "Resistance"
-    ])
+# ---------------- PREDICTION LOGIC ----------------
+def predict_status(temp, voltage, current):
+    # Replace this with your LSTM model later
+    if temp > 75 or current > 40:
+        return "UNSAFE 🔴"
+    elif temp > 60:
+        return "RISK 🟠"
+    else:
+        return "SAFE 🟢"
 
-if "prev_temp" not in st.session_state:
-    st.session_state.prev_temp = 30
-
-# ---------- RANDOM DATA ----------
-temp = random.uniform(30, 60)
-voltage = random.uniform(300, 420)
-current = random.uniform(0, 150)
-soc = random.uniform(20, 100)
-imbalance = random.uniform(0, 5)
-resistance = random.uniform(0.01, 0.1)
-
-# ---------- RATE ----------
-dTdt = temp - st.session_state.prev_temp
-
-# ---------- STORE ----------
-new_row = {
-    "Temp": temp,
-    "dT/dt": dTdt,
-    "Voltage": voltage,
-    "Current": current,
-    "SOC": soc,
-    "Imbalance": imbalance,
-    "Resistance": resistance
-}
-
-st.session_state.data = pd.concat(
-    [st.session_state.data, pd.DataFrame([new_row])],
-    ignore_index=True
-).tail(50)
-
-st.session_state.prev_temp = temp
-
-# ---------- METRICS ----------
+# ---------------- MAIN DASHBOARD ----------------
 col1, col2, col3, col4 = st.columns(4)
-col5, col6, col7 = st.columns(3)
 
-col1.metric("🌡 Temp (°C)", f"{temp:.2f}")
-col2.metric("⚡ dT/dt", f"{dTdt:.2f}")
-col3.metric("🔋 Voltage (V)", f"{voltage:.2f}")
-col4.metric("🔌 Current (A)", f"{current:.2f}")
+temp, voltage, current, soc = get_sensor_data()
+status = predict_status(temp, voltage, current)
 
-col5.metric("🔋 SOC (%)", f"{soc:.2f}")
-col6.metric("⚖ Imbalance", f"{imbalance:.2f}")
-col7.metric("🧪 Resistance", f"{resistance:.3f}")
+col1.metric("🌡 Temperature (°C)", f"{temp:.2f}")
+col2.metric("🔌 Voltage (V)", f"{voltage:.2f}")
+col3.metric("⚡ Current (A)", f"{current:.2f}")
+col4.metric("🔋 State of Charge (%)", f"{soc:.2f}")
 
-# ---------- GRAPH ----------
-st.subheader("📈 Parameter Trends")
-st.line_chart(st.session_state.data)
+st.markdown("---")
 
-# ---------- RISK ----------
-risk = 0
+# ---------------- PREDICTION OUTPUT ----------------
+st.subheader("🤖 AI Prediction Result")
 
-if temp > 55:
-    risk += 2
-if dTdt > 3:
-    risk += 2
-if current > 120:
-    risk += 2
-if imbalance > 3:
-    risk += 1
-
-# ---------- STATUS ----------
-if risk >= 5:
-    st.error("🔥 HIGH FIRE RISK")
-elif risk >= 3:
-    st.warning("⚠️ WARNING")
+if "SAFE" in status:
+    st.success(status)
+elif "RISK" in status:
+    st.warning(status)
 else:
-    st.success("✅ SAFE")
+    st.error(status)
 
-# ---------- 3D MODEL ----------
-st.subheader("🚗 Digital Twin (3D EV)")
+# ---------------- ALERT SYSTEM ----------------
+st.subheader("🚨 Alerts")
 
-components.html("""
-<div style="width:100%; height:500px;">
-<iframe 
-    title="EV Car"
-    frameborder="0"
-    allowfullscreen
-    allow="autoplay; fullscreen; xr-spatial-tracking"
-    width="100%"
-    height="100%"
-    src="https://sketchfab.com/models/8be255da521b46d283ddc21803484c3b/embed?autostart=1&ui_controls=0&ui_infos=0&ui_watermark=0">
-</iframe>
-</div>
-""", height=520)
+if "UNSAFE" in status:
+    st.error("🔥 High Risk of Battery Fire! Take immediate action!")
+elif "RISK" in status:
+    st.warning("⚠️ Battery entering risky condition.")
+else:
+    st.success("✅ Battery operating normally.")
+
+# ---------------- AUTO REFRESH ----------------
+if auto_refresh:
+    time.sleep(2)
+    st.rerun()
